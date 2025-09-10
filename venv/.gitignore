@@ -1,0 +1,7 @@
+venv/
+src/.env
+__pycache__/
+*.py[cod]
+.DS_Store
+.vscode/
+*.swp
