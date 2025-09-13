@@ -10,25 +10,25 @@ def generate_newsletter_html(newsletter_data):
       <table align="center" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px; margin:auto; background-color:#ffffff; padding:20px;">
         <tr>
           <td align="center" style="padding-bottom:20px;">
-            <h2 style="margin:0; font-size:24px;">📈 Weekly Stock Newsletter</h2>
+            <h2 style="margin:0; font-size:24px;">Today's Stock Spam</h2>
             <p style="font-size:14px; color:#666;">Latest news for your tracked stocks</p>
           </td>
         </tr>
     '''
-    count = 0
+    old_ticker = ""
     #print(newsletter_data)
-    for item in newsletter_data[0]:
-        if count == 1:
+    for item in newsletter_data:
+        acc = item[0]
+        if old_ticker != acc["ticker"]:
             html += f'''
             <tr>
             <td style="padding:10px 0; border-top:1px solid #e0e0e0;">
-            <h3 style="margin:0 0 10px 0; color:#333;">${item["ticker"]}</h3>
+            <h3 style="margin:0 0 10px 0; color:#333;">${acc["ticker"]}</h3>
             '''
-            count = 0
-        count += 1
-        title = item["title"]
-        description = item["description"]
-        url = item["url"]
+            old_ticker = acc["ticker"]
+        title = acc["title"]
+        description = acc["description"]
+        url = acc["url"]
         html += f'''
         <p style="margin:0 0 5px;"><strong>•</strong> <a href="{url}" style="color:#1a73e8; text-decoration:none;">{title}</a></p>
         <p style="margin:0 0 15px; font-size:14px; color:#555;">{description}</p>
