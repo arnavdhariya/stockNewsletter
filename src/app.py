@@ -246,6 +246,3 @@ with st.expander("Examples"):
     - `GOOGL, MSFT, TSLA` (Google, Microsoft, Tesla)
     - `NVDA, AMZN, META` (NVIDIA, Amazon, Meta)
     """)
-
-if __name__ == '__main__':
-    send_daily_newsletters()

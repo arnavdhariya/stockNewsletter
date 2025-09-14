@@ -25,6 +25,7 @@ def fetch_news_by_ticker(ticker, max_results=2):
 
 def json_parser(data, ticker):
     parsed = []
+    print(type(data))
     for article in data["articles"]:
         curr_entry = {}
         curr_entry["ticker"] = ticker
