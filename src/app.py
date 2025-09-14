@@ -88,7 +88,7 @@ def send_daily_newsletters():
                 parsed_news = json_parser(news, ticker)
                 news_data.extend(parsed_news)
             except Exception as e:
-                st.error(f"Error fetching news for {ticker}: {e}")
+                #st.error(f"Error fetching news for {ticker}: {e}")
             
         if not news_data:
             continue
