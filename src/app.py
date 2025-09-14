@@ -83,12 +83,10 @@ def send_daily_newsletters():
         tickers = eval(tickers_str) if tickers_str else []
         news_data = []
         for ticker in tickers:
-            try:
-                news = fetch_news_by_ticker(ticker, 2)
-                parsed_news = json_parser(news, ticker)
-                news_data.extend(parsed_news)
-            except Exception as e:
-                #st.error(f"Error fetching news for {ticker}: {e}")
+
+            news = fetch_news_by_ticker(ticker, 2)
+            parsed_news = json_parser(news, ticker)
+            news_data.extend(parsed_news)
             
         if not news_data:
             continue
