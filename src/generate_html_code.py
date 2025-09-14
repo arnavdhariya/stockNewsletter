@@ -18,7 +18,8 @@ def generate_newsletter_html(newsletter_data):
     old_ticker = ""
     #print(newsletter_data)
     for item in newsletter_data:
-        acc = item[0]
+        #print(item, type(item))
+        acc = item
         if old_ticker != acc["ticker"]:
             html += f'''
             <tr>

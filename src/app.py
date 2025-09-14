@@ -1,6 +1,109 @@
 # app.py
 import streamlit as st
 import re
+import smtplib
+import schedule
+import time
+import threading
+import os
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from dotenv import load_dotenv
+import sqlite3
+import requests
+import urllib
+import datetime
+
+load_dotenv()
+
+from fetch_news import fetch_news_by_ticker, json_parser
+from generate_html_code import generate_newsletter_html
+
+def create_db():
+    db_path = os.path.join(os.path.dirname(__file__), 'subscribers.db')
+    conn = sqlite3.connect(db_path)
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS subscribers (
+                    email TEXT PRIMARY KEY,
+                    tickers TEXT
+                )''')
+    conn.commit()
+    conn.close()
+
+def add_subscriber(email, tickers):
+    create_db()
+    db_path = os.path.join(os.path.dirname(__file__), 'subscribers.db')
+    conn = sqlite3.connect(db_path)
+    c = conn.cursor()
+    c.execute('INSERT OR REPLACE INTO subscribers VALUES (?, ?)', (email, str(tickers)))
+    conn.commit()
+    conn.close()
+
+def get_all_subscribers():
+    create_db()
+    db_path = os.path.join(os.path.dirname(__file__), 'subscribers.db')
+    conn = sqlite3.connect(db_path)
+    c = conn.cursor()
+    c.execute('SELECT * FROM subscribers')
+    rows = c.fetchall()
+    conn.close()
+    return rows
+
+# Email functions
+def send_email(to_email, subject, body_html):
+    EMAIL = os.getenv("EMAIL")
+    PASSWORD = os.getenv("PASSWORD")
+    msg = MIMEMultipart()
+    msg["From"] = EMAIL
+    msg["To"] = to_email
+    msg["Subject"] = subject
+    msg.attach(MIMEText(body_html, "html"))
+
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(EMAIL, PASSWORD)
+            server.send_message(msg)
+        return True
+    except smtplib.SMTPAuthenticationError as e:
+        return False
+    except smtplib.SMTPRecipientsRefused as e:
+        return False
+    except smtplib.SMTPServerDisconnected as e:
+        return False
+
+def send_daily_newsletters():
+
+    subscribers = get_all_subscribers()
+    
+    if not subscribers:
+        return
+
+    for email, tickers_str in subscribers:
+        tickers = eval(tickers_str) if tickers_str else []
+        news_data = []
+        for ticker in tickers:
+            try:
+                news = fetch_news_by_ticker(ticker, 2)
+                parsed_news = json_parser(news, ticker)
+                news_data.extend(parsed_news)
+            except Exception as e:
+                st.error(f"Error fetching news for {ticker}: {e}")
+            
+        if not news_data:
+            continue
+        html_content = generate_newsletter_html(news_data)
+        send_email(email, "Daily Stock Newsletter", html_content)
+
+def run_scheduler():
+    while True:
+        schedule.run_pending()
+        time.sleep(60)  # Check every minute
+
+scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
+scheduler_thread.start()
+
+schedule.every().day.at("10:00").do(send_daily_newsletters)
 
 def validate_email(email):
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
@@ -83,8 +186,13 @@ def collect_subscription_data():
             collected_emails = valid_emails
             collected_tickers = valid_tickers
             
+            # Save to database
+            for email in collected_emails:
+                add_subscriber(email, collected_tickers)
+            
             st.success("🎉 Subscription successful!")
             st.info(f"📊 You will receive updates for {len(collected_tickers)} stock(s) at {len(collected_emails)} email address(es)")
+            st.info("📧 Daily newsletters will be sent at 10:00 AM")
             
             # Display summary
             with st.expander("Subscription Summary"):
@@ -140,3 +248,6 @@ with st.expander("Examples"):
     - `GOOGL, MSFT, TSLA` (Google, Microsoft, Tesla)
     - `NVDA, AMZN, META` (NVIDIA, Amazon, Meta)
     """)
+
+if __name__ == '__main__':
+    send_daily_newsletters()
